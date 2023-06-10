@@ -68,3 +68,12 @@ pub fn handle_event() -> io::Result<bool> {
 	}
 	Ok(false)
 }
+
+pub fn lock_workstation() -> io::Result<()> {
+	let result = unsafe { windows::Win32::System::Shutdown::LockWorkStation() }.as_bool();
+	if result {
+		Ok(())
+	} else {
+		Err(io::Error::last_os_error())
+	}
+}
