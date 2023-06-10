@@ -5,6 +5,8 @@ fn main() {
 	}
 	.register()
 	.unwrap();
+	winlock::set_default_lock_enabled(false).unwrap();
 	while let false = winlock::handle_event().unwrap() {}
 	winlock::lock_workstation().unwrap();
+	winlock::set_default_lock_enabled(true).unwrap();
 }

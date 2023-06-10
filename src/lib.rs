@@ -1,11 +1,15 @@
-use std::io;
+use std::{io, mem};
 
 use bitflags::bitflags;
-use windows::Win32::{
-	Foundation::HWND,
-	UI::{
-		Input::KeyboardAndMouse::{RegisterHotKey, HOT_KEY_MODIFIERS},
-		WindowsAndMessaging::{GetMessageW, WM_HOTKEY},
+use windows::{
+	w,
+	Win32::{
+		Foundation::HWND,
+		System::Registry::{RegSetKeyValueW, HKEY_CURRENT_USER, REG_DWORD},
+		UI::{
+			Input::KeyboardAndMouse::{RegisterHotKey, HOT_KEY_MODIFIERS},
+			WindowsAndMessaging::{GetMessageW, WM_HOTKEY},
+		},
 	},
 };
 
@@ -93,5 +97,24 @@ pub fn lock_workstation() -> io::Result<()> {
 		Ok(())
 	} else {
 		Err(io::Error::last_os_error())
+	}
+}
+
+pub fn set_default_lock_enabled(enabled: bool) -> io::Result<()> {
+	let data: u32 = if enabled { 0 } else { 1 };
+	let result = unsafe {
+		RegSetKeyValueW(
+			HKEY_CURRENT_USER,
+			w!(r"Software\Microsoft\Windows\CurrentVersion\Policies\System"),
+			w!(r"DisableLockWorkstation"),
+			REG_DWORD.0,
+			Some(&data as *const _ as *const _),
+			mem::size_of_val(&data) as _,
+		)
+	};
+	if result.is_ok() {
+		Ok(())
+	} else {
+		Err(io::Error::from_raw_os_error(result.0 as _))
 	}
 }
