@@ -88,6 +88,9 @@ pub fn handle_event() -> io::Result<bool> {
 
 /// Locks the workstation / user session.
 ///
+/// This procedure can return a successful result but not have the workstation locked. This can happen for details specified in the
+/// Windows API documentation linked below, or because [workstation locking is disabled](set_lock_enabled).
+///
 /// Corresponds to [LockWorkStation](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-lockworkstation).
 pub fn lock_workstation() -> io::Result<()> {
 	let result = unsafe { windows::Win32::System::Shutdown::LockWorkStation() }.as_bool();
@@ -98,10 +101,14 @@ pub fn lock_workstation() -> io::Result<()> {
 	}
 }
 
-/// Sets whether to enable or disable the Windows default <kbd>Win</kbd> + <kbd>L</kbd> hotkey.
+/// Sets whether to enable or disable workstation locking.
 ///
-/// It achieves its behavior by modifying the Windows registry so expect this to only work with elevated privileges.
-pub fn set_default_lock_enabled(enabled: bool) -> io::Result<()> {
+/// If disabled, it's impossible to lock the workstation, whether by shortcut (<kbd>Wind</kbd> + <kbd>L</kbd>) or programmatically ([`lock_workstation`]).
+/// Note that attempting to lock and immediately disabling locking afterwards is a race condition, and locking will likely be disabled by the time the issued locking begins,
+/// therefore preventing the computer from locking altogether.
+///
+/// This procedure achieves its behavior by modifying the Windows registry so expect this to only work with elevated privileges.
+pub fn set_lock_enabled(enabled: bool) -> io::Result<()> {
 	let data: u32 = if enabled { 0 } else { 1 };
 	let result = unsafe {
 		RegSetKeyValueW(
