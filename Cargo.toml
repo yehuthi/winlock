@@ -1,0 +1,7 @@
+[package]
+name = "winlock"
+authors = ["Yehuthi <yehuthith@gmail.com>"]
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/yehuthi/winlock"
+keywords = ["windows", "hotkey", "lock", "os", "login"]
