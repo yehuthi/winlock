@@ -63,10 +63,7 @@ pub fn handle_event() -> io::Result<bool> {
 		-1 => return Err(io::Error::last_os_error()),
 		_ => message,
 	};
-	if message.message == WM_HOTKEY {
-		println!("LOCK REQUESTED!");
-	}
-	Ok(false)
+	Ok(message.message == WM_HOTKEY)
 }
 
 pub fn lock_workstation() -> io::Result<()> {

@@ -5,6 +5,6 @@ fn main() {
 	}
 	.register()
 	.unwrap();
-	winlock::handle_event().unwrap();
+	while let false = winlock::handle_event().unwrap() {}
 	winlock::lock_workstation().unwrap();
 }
