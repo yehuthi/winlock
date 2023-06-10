@@ -23,3 +23,6 @@ features = [
     "Win32_System_Shutdown",
     "Win32_System_Registry"
 ]
+
+[build-dependencies]
+embed-manifest = "1.3.1"
