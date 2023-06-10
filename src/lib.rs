@@ -11,7 +11,7 @@ use windows::{
 		System::Registry::{RegSetKeyValueW, HKEY_CURRENT_USER, REG_DWORD},
 		UI::{
 			Input::KeyboardAndMouse::{RegisterHotKey, HOT_KEY_MODIFIERS},
-			WindowsAndMessaging::{GetMessageW, WM_HOTKEY},
+			WindowsAndMessaging::{GetMessageW, WM_HOTKEY, WM_QUIT},
 		},
 	},
 };
@@ -73,17 +73,32 @@ impl Hotkey {
 	}
 }
 
-/// Blocks until the next Windows message, returns true if the message was a hotkey press.
-pub fn handle_event() -> io::Result<bool> {
+/// An event from the Windows message loop in the context of hotkeys.
+#[derive(Debug, Hash, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+pub enum HotkeyEvent {
+	/// The hotkey was pressed.
+	Hotkey,
+	/// An irrelevant event occurred.
+	Other,
+	/// Got a quit signal.
+	Quit,
+}
+
+/// Blocks until the next Windows message.
+pub fn await_event() -> io::Result<HotkeyEvent> {
 	let mut message = Default::default();
 	let message_result =
 		unsafe { GetMessageW(&mut message, HWND::default(), WM_HOTKEY, WM_HOTKEY) };
 	let message = match message_result.0 {
-		0 => return Ok(true),
+		0 => return Ok(HotkeyEvent::Quit),
 		-1 => return Err(io::Error::last_os_error()),
 		_ => message,
 	};
-	Ok(message.message == WM_HOTKEY)
+	match message.message {
+		WM_HOTKEY => Ok(HotkeyEvent::Hotkey),
+		WM_QUIT => Ok(HotkeyEvent::Quit),
+		_ => Ok(HotkeyEvent::Quit),
+	}
 }
 
 /// Locks the workstation / user session.
