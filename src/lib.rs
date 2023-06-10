@@ -100,6 +100,9 @@ pub fn lock_workstation() -> io::Result<()> {
 	}
 }
 
+/// Sets whether to enable or disable the Windows default <kbd>Win</kbd> + <kbd>L</kbd> hotkey.
+///
+/// It achieves its behavior by modifying the Windows registry so expect this to only work with elevated privileges.
 pub fn set_default_lock_enabled(enabled: bool) -> io::Result<()> {
 	let data: u32 = if enabled { 0 } else { 1 };
 	let result = unsafe {
