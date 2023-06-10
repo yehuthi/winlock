@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use clap::Parser;
-use winlock::{HotkeyEvent, Modifiers};
+use winlock::{HotkeyEvent, Key, Modifiers};
 
 #[derive(Debug, Hash, Default, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, clap::Parser)]
 struct Options {
@@ -18,6 +18,8 @@ struct Options {
 	/// Reference: https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
 	#[arg(short, long)]
 	key:             Option<u32>,
+	#[arg(short, long)]
+	button:          Option<char>,
 	/// Control modifier.
 	#[arg(short, long)]
 	ctrl:            bool,
@@ -30,6 +32,20 @@ struct Options {
 	/// Alt modifier.
 	#[arg(short, long)]
 	alt:             bool,
+}
+
+impl Options {
+	fn virtual_key(self) -> Option<Key> {
+		match (self.key, self.button) {
+			(None, None) => None,
+			(None, Some(button)) => {
+				// XXX: ERROR HANDLE
+				Some(Key::from_current_layout_char(button).unwrap())
+			}
+			(Some(code), None) => Some(Key(code)),
+			(Some(_), Some(_)) => unreachable!(),
+		}
+	}
 }
 
 impl From<Options> for Modifiers {
@@ -57,7 +73,7 @@ fn main() {
 		winlock::set_lock_enabled(false).unwrap();
 	}
 
-	if let Some(key_code) = options.key {
+	if let Some(key_code) = options.virtual_key() {
 		winlock::Hotkey {
 			modifiers: Modifiers::from(options),
 			key_code,

@@ -10,7 +10,7 @@ use windows::{
 		Foundation::HWND,
 		System::Registry::{RegSetKeyValueW, HKEY_CURRENT_USER, REG_DWORD},
 		UI::{
-			Input::KeyboardAndMouse::{RegisterHotKey, HOT_KEY_MODIFIERS},
+			Input::KeyboardAndMouse::{RegisterHotKey, VkKeyScanW, HOT_KEY_MODIFIERS},
 			WindowsAndMessaging::{GetMessageW, WM_HOTKEY, WM_QUIT},
 		},
 	},
@@ -41,13 +41,28 @@ impl From<Modifiers> for HOT_KEY_MODIFIERS {
 	fn from(value: Modifiers) -> Self { Self(value.bits()) }
 }
 
+#[derive(Debug, Hash, Default, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+#[repr(transparent)]
+pub struct Key(
+	/// The key's [virtual key code](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes).
+	pub u32,
+);
+
+impl Key {
+	pub fn from_current_layout_char(c: char) -> Option<Self> {
+		let scan = unsafe { VkKeyScanW(c as u16) };
+		let vkc = scan & 0x00FF;
+		(vkc != -1).then_some(Key(vkc as u32))
+	}
+}
+
 /// A global keyboard hotkey / shortcut that can be [`register`](Hotkey::register)ed.
 #[derive(Debug, Hash, Default, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Hotkey {
 	/// The hotkey [`Modifiers`].
 	pub modifiers: Modifiers,
 	/// The hotkey's [virtual key code](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes).
-	pub key_code:  u32,
+	pub key_code:  Key,
 }
 
 impl Hotkey {
@@ -61,7 +76,7 @@ impl Hotkey {
 				HWND::default(),
 				0x31710C4,
 				self.modifiers.into(),
-				self.key_code,
+				self.key_code.0,
 			)
 			.as_bool()
 		};
