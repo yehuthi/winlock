@@ -1,3 +1,6 @@
+#[cfg(not(target_family = "windows"))]
+compile_error!("This library targets Windows only.");
+
 use std::{io, mem};
 
 use bitflags::bitflags;
