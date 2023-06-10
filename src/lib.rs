@@ -16,11 +16,6 @@ use windows::{
 	},
 };
 
-#[derive(Debug, Hash, Default, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
-pub struct Config {
-	hotkey: Option<Hotkey>,
-}
-
 bitflags! {
 /// Keyboard [`Hotkey`] modifiers.
 ///
