@@ -1,5 +1,6 @@
 [package]
 name = "winlock"
+description = "A utility to customize the keyboard shortcut for session locking on Windows."
 authors = ["Yehuthi <yehuthith@gmail.com>"]
 version = "0.1.0"
 edition = "2021"
