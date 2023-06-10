@@ -57,7 +57,8 @@ impl Hotkey {
 
 pub fn handle_event() -> io::Result<bool> {
 	let mut message = Default::default();
-	let message_result = unsafe { GetMessageW(&mut message, HWND::default(), 0, 0) };
+	let message_result =
+		unsafe { GetMessageW(&mut message, HWND::default(), WM_HOTKEY, WM_HOTKEY) };
 	let message = match message_result.0 {
 		0 => return Ok(true),
 		-1 => return Err(io::Error::last_os_error()),
