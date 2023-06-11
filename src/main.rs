@@ -17,9 +17,12 @@ struct Options {
 	///
 	/// Reference: https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
 	#[arg(short, long)]
-	key:             Option<u32>,
+	virtual_code:    Option<u32>,
 	#[arg(short, long)]
-	button:          Option<char>,
+	/// The key to press.
+	///
+	/// If it doesn't match to a character, see the -v flag.
+	key:             Option<char>,
 	/// Control modifier.
 	#[arg(short, long)]
 	ctrl:            bool,
@@ -44,7 +47,7 @@ pub enum OptionsKeyError {
 
 impl Options {
 	fn virtual_key(self) -> Result<Option<Key>, OptionsKeyError> {
-		match (self.key, self.button) {
+		match (self.virtual_code, self.key) {
 			(None, None) => Ok(None),
 			(None, Some(button)) => Key::from_current_layout_char(button)
 				.map_or(Err(OptionsKeyError::MappingFail), |k| Ok(Some(k))),
