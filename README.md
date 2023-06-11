@@ -12,8 +12,8 @@ A utility to customize the keyboard shortcut for session locking on Windows.
 ```shell
 winlock -d       # Disables the lock screen (and Win+L with it)
 winlock -r       # Restores the lock screen (and Win+L with it)
-winlock -cwb j   # Sets a shortcut Ctrl+Win+J to lock the screen (Win+L still functional)
-winlock -drcwb j # Replaces Win+L with Ctrl+Win+J
+winlock -cwk j   # Sets a shortcut Ctrl+Win+J to lock the screen (Win+L still functional)
+winlock -drcwk j # Replaces Win+L with Ctrl+Win+J
 
 winlock --help   # Describes usage with more detail
 ```
