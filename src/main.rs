@@ -34,16 +34,21 @@ struct Options {
 	alt:             bool,
 }
 
+pub enum OptionsKeyError {
+	MappingFail,
+	NoKey,
+	Conflict,
+}
+
 impl Options {
-	fn virtual_key(self) -> Option<Key> {
+	fn virtual_key(self) -> Result<Key, OptionsKeyError> {
 		match (self.key, self.button) {
-			(None, None) => None,
+			(None, None) => Err(OptionsKeyError::NoKey),
 			(None, Some(button)) => {
-				// XXX: ERROR HANDLE
-				Some(Key::from_current_layout_char(button).unwrap())
+				Key::from_current_layout_char(button).ok_or(OptionsKeyError::MappingFail)
 			}
-			(Some(code), None) => Some(Key(code)),
-			(Some(_), Some(_)) => unreachable!(),
+			(Some(code), None) => Ok(Key(code)),
+			(Some(_), Some(_)) => Err(OptionsKeyError::Conflict),
 		}
 	}
 }
@@ -73,34 +78,40 @@ fn main() {
 		winlock::set_lock_enabled(false).unwrap();
 	}
 
-	if let Some(key_code) = options.virtual_key() {
-		winlock::Hotkey {
-			modifiers: Modifiers::from(options),
-			key_code,
-		}
-		.register()
-		.unwrap();
-		if options.restore_windows {
-			ctrlc::set_handler(|| {
-				winlock::set_lock_enabled(true).unwrap();
-				std::process::exit(0);
-			})
+	match options.virtual_key() {
+		Ok(key_code) => {
+			winlock::Hotkey {
+				modifiers: Modifiers::from(options),
+				key_code,
+			}
+			.register()
 			.unwrap();
+			if options.restore_windows {
+				ctrlc::set_handler(|| {
+					winlock::set_lock_enabled(true).unwrap();
+					std::process::exit(0);
+				})
+				.unwrap();
+			}
+			loop {
+				let event = winlock::await_event().unwrap();
+				match event {
+					HotkeyEvent::Hotkey => {}
+					HotkeyEvent::Other => continue,
+					HotkeyEvent::Quit => break,
+				}
+				winlock::set_lock_enabled(true).unwrap();
+				winlock::lock_workstation().unwrap();
+				if options.disable_windows {
+					// sleep for a bit to avoid race condition (see `set_lock_enabled`'s documentation).
+					std::thread::sleep(Duration::from_millis(500));
+					winlock::set_lock_enabled(false).unwrap();
+				}
+			}
 		}
-		loop {
-			let event = winlock::await_event().unwrap();
-			match event {
-				HotkeyEvent::Hotkey => {}
-				HotkeyEvent::Other => continue,
-				HotkeyEvent::Quit => break,
-			}
-			winlock::set_lock_enabled(true).unwrap();
-			winlock::lock_workstation().unwrap();
-			if options.disable_windows {
-				// sleep for a bit to avoid race condition (see `set_lock_enabled`'s documentation).
-				std::thread::sleep(Duration::from_millis(500));
-				winlock::set_lock_enabled(false).unwrap();
-			}
+		Err(e) => {
+			todo!("error report");
+			std::process::exit(1);
 		}
 	}
 
