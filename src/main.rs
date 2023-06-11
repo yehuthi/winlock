@@ -34,20 +34,21 @@ struct Options {
 	alt:             bool,
 }
 
+#[derive(Debug, Hash, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, thiserror::Error)]
 pub enum OptionsKeyError {
+	#[error("failed to map the key to its virtual code")]
 	MappingFail,
-	NoKey,
+	#[error("two keyboard shortcuts were given")]
 	Conflict,
 }
 
 impl Options {
-	fn virtual_key(self) -> Result<Key, OptionsKeyError> {
+	fn virtual_key(self) -> Result<Option<Key>, OptionsKeyError> {
 		match (self.key, self.button) {
-			(None, None) => Err(OptionsKeyError::NoKey),
-			(None, Some(button)) => {
-				Key::from_current_layout_char(button).ok_or(OptionsKeyError::MappingFail)
-			}
-			(Some(code), None) => Ok(Key(code)),
+			(None, None) => Ok(None),
+			(None, Some(button)) => Key::from_current_layout_char(button)
+				.map_or(Err(OptionsKeyError::MappingFail), |k| Ok(Some(k))),
+			(Some(code), None) => Ok(Some(Key(code))),
 			(Some(_), Some(_)) => Err(OptionsKeyError::Conflict),
 		}
 	}
@@ -73,13 +74,19 @@ impl From<Options> for Modifiers {
 }
 
 fn main() {
+	{
+		let subscriber = tracing_subscriber::fmt().finish();
+		let _ = tracing::subscriber::set_global_default(subscriber)
+			.map_err(|e| eprintln!("failed to set up logging: {e}"));
+	}
 	let options = Options::parse();
+
 	if options.disable_windows {
 		winlock::set_lock_enabled(false).unwrap();
 	}
 
 	match options.virtual_key() {
-		Ok(key_code) => {
+		Ok(Some(key_code)) => {
 			winlock::Hotkey {
 				modifiers: Modifiers::from(options),
 				key_code,
@@ -109,8 +116,9 @@ fn main() {
 				}
 			}
 		}
+		Ok(None) => {}
 		Err(e) => {
-			todo!("error report");
+			tracing::error!("{e}");
 			std::process::exit(1);
 		}
 	}
