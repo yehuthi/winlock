@@ -73,6 +73,26 @@ impl From<Options> for Modifiers {
 	}
 }
 
+fn disable_lock() {
+	if let Err(e) = winlock::set_lock_enabled(false) {
+		tracing::error!("failed to disable locking: {e}");
+	}
+}
+
+fn enable_lock() {
+	if let Err(e) = winlock::set_lock_enabled(true) {
+		tracing::error!("failed to restore locking: {e}");
+	}
+}
+
+impl Options {
+	fn cleanup(self) {
+		if self.restore_windows {
+			enable_lock();
+		}
+	}
+}
+
 fn main() {
 	{
 		let subscriber = tracing_subscriber::fmt().finish();
@@ -82,37 +102,49 @@ fn main() {
 	let options = Options::parse();
 
 	if options.disable_windows {
-		winlock::set_lock_enabled(false).unwrap();
+		disable_lock();
 	}
 
 	match options.virtual_key() {
 		Ok(Some(key_code)) => {
-			winlock::Hotkey {
+			let register_result = winlock::Hotkey {
 				modifiers: Modifiers::from(options),
 				key_code,
 			}
-			.register()
-			.unwrap();
+			.register();
+			if let Err(e) = register_result {
+				tracing::error!("failed to register the hotkey in the system: {e}, terminating.");
+				options.cleanup();
+				std::process::exit(1);
+			}
 			if options.restore_windows {
-				ctrlc::set_handler(|| {
-					winlock::set_lock_enabled(true).unwrap();
+				let _ = ctrlc::set_handler(move || {
+					options.cleanup();
 					std::process::exit(0);
 				})
-				.unwrap();
+				.map_err(|e| tracing::warn!("failed to hook restoration on termination: {e}"));
 			}
 			loop {
-				let event = winlock::await_event().unwrap();
+				let event = match winlock::await_event() {
+					Ok(event) => event,
+					Err(error) => {
+						tracing::error!("failed to listen to a message from Windows: {error}");
+						continue;
+					}
+				};
 				match event {
 					HotkeyEvent::Hotkey => {}
 					HotkeyEvent::Other => continue,
 					HotkeyEvent::Quit => break,
 				}
-				winlock::set_lock_enabled(true).unwrap();
-				winlock::lock_workstation().unwrap();
+				enable_lock();
+				if let Err(e) = winlock::lock_workstation() {
+					tracing::error!("failed to lock the workstation: {e}");
+				}
 				if options.disable_windows {
 					// sleep for a bit to avoid race condition (see `set_lock_enabled`'s documentation).
 					std::thread::sleep(Duration::from_millis(500));
-					winlock::set_lock_enabled(false).unwrap();
+					disable_lock();
 				}
 			}
 		}
@@ -124,6 +156,6 @@ fn main() {
 	}
 
 	if options.restore_windows {
-		winlock::set_lock_enabled(true).unwrap();
+		enable_lock();
 	}
 }
