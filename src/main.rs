@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use clap::Parser;
+use tracing_subscriber::EnvFilter;
 use winlock::{HotkeyEvent, Key, Modifiers};
 
 #[derive(Debug, Hash, Default, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, clap::Parser)]
@@ -97,12 +98,19 @@ impl Options {
 }
 
 fn main() {
+	let options = Options::parse();
+
 	{
-		let subscriber = tracing_subscriber::fmt().finish();
+		let subscriber = tracing_subscriber::fmt()
+			.with_env_filter(
+				EnvFilter::builder()
+					.with_env_var("WINLOCK_LOG")
+					.from_env_lossy(),
+			)
+			.finish();
 		let _ = tracing::subscriber::set_global_default(subscriber)
 			.map_err(|e| eprintln!("failed to set up logging: {e}"));
 	}
-	let options = Options::parse();
 
 	if options.disable_windows {
 		disable_lock();
