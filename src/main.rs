@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use clap::Parser;
+use tracing::metadata::LevelFilter;
 use tracing_subscriber::EnvFilter;
 use winlock::{HotkeyEvent, Key, Modifiers};
 
@@ -105,6 +106,7 @@ fn main() {
 			.with_env_filter(
 				EnvFilter::builder()
 					.with_env_var("WINLOCK_LOG")
+					.with_default_directive(LevelFilter::INFO.into())
 					.from_env_lossy(),
 			)
 			.finish();
