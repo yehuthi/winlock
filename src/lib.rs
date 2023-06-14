@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 #[cfg(not(target_family = "windows"))]
 compile_error!("This library targets Windows only.");
 
