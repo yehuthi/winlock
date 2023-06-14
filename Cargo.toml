@@ -8,6 +8,7 @@ repository = "https://github.com/yehuthi/winlock"
 license = "MIT OR Apache-2.0"
 keywords = ["windows", "hotkey", "lock", "os", "login"]
 categories = ["command-line-utilities", "os::windows-apis"]
+exclude = ["/winlock.svg"]
 
 [dependencies]
 bitflags = "2.3.1"

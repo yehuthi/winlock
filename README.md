@@ -1,4 +1,4 @@
-# WinLock <img src="winlock.svg" width=100 height=100 align=left />
+# WinLock <img src="https://github.com/yehuthi/winlock/blob/0a5dd2c85d33b8d1e8e906ee48491a6cb186c174/winlock.svg?raw=true" width=100 height=100 align=left />
 
 A utility to customize the keyboard shortcut for session locking on Windows.
 
