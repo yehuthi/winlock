@@ -1,3 +1,6 @@
+#![doc(
+	html_logo_url = "https://github.com/yehuthi/winlock/blob/0a5dd2c85d33b8d1e8e906ee48491a6cb186c174/winlock.svg?raw=true"
+)]
 #![doc = include_str!("../README.md")]
 #![deny(missing_docs)]
 
