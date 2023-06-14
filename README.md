@@ -1,4 +1,4 @@
-# WinLock
+# WinLock <img src="winlock.svg" width=100 height=100 align=left />
 
 A utility to customize the keyboard shortcut for session locking on Windows.
 
