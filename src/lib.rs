@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![deny(missing_docs)]
 
 #[cfg(not(target_family = "windows"))]
 compile_error!("This library targets Windows only.");
@@ -45,12 +46,18 @@ impl From<Modifiers> for HOT_KEY_MODIFIERS {
 
 #[derive(Debug, Hash, Default, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 #[repr(transparent)]
+/// A keyboard key / button.
 pub struct Key(
 	/// The key's [virtual key code](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes).
 	pub u32,
 );
 
 impl Key {
+	/// Converts a [`char`] into a [`Key`].
+	///
+	/// It reads the user's current keyboard layout to determine the key that emits the given character.
+	///
+	/// Corresponds to [VkKeyScanW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-vkkeyscanw).
 	pub fn from_current_layout_char(c: char) -> Option<Self> {
 		let scan = unsafe { VkKeyScanW(c as u16) };
 		let vkc = scan & 0x00FF;
