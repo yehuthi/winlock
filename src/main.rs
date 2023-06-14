@@ -79,22 +79,32 @@ impl From<Options> for Modifiers {
 }
 
 fn disable_lock() {
-	if let Err(e) = winlock::set_lock_enabled(false) {
-		tracing::error!("failed to disable locking: {e}");
-	}
+	tracing::info_span!("disabling windows lock").in_scope(|| {
+		if let Err(e) = winlock::set_lock_enabled(false) {
+			tracing::error!("failed to disable locking: {e}");
+		} else {
+			tracing::info!("disabled")
+		}
+	})
 }
 
 fn enable_lock() {
-	if let Err(e) = winlock::set_lock_enabled(true) {
-		tracing::error!("failed to restore locking: {e}");
-	}
+	tracing::info_span!("enabling windows lock").in_scope(|| {
+		if let Err(e) = winlock::set_lock_enabled(true) {
+			tracing::error!("failed to restore locking: {e}");
+		} else {
+			tracing::info!("enabled")
+		}
+	})
 }
 
 impl Options {
 	fn cleanup(self) {
-		if self.restore_windows {
-			enable_lock();
-		}
+		tracing::info_span!("shutting down").in_scope(|| {
+			if self.restore_windows {
+				enable_lock();
+			}
+		})
 	}
 }
 
@@ -146,16 +156,31 @@ fn main() {
 					}
 				};
 				match event {
-					HotkeyEvent::Hotkey => {}
-					HotkeyEvent::Other => continue,
-					HotkeyEvent::Quit => break,
+					HotkeyEvent::Hotkey => {
+						tracing::info!("detected hotkey press");
+					}
+					HotkeyEvent::Other => {
+						tracing::debug!(
+							"received an irrelevant Windows message (not a hotkey or quit)"
+						);
+						continue;
+					}
+					HotkeyEvent::Quit => {
+						tracing::debug!("got WM_QUIT");
+						break;
+					}
 				}
 				enable_lock();
-				if let Err(e) = winlock::lock_workstation() {
-					tracing::error!("failed to lock the workstation: {e}");
-				}
+				tracing::info_span!("locking workspace").in_scope(|| {
+					if let Err(e) = winlock::lock_workstation() {
+						tracing::error!("failed to lock the workstation: {e}");
+					} else {
+						tracing::info!("locking the workstation");
+					}
+				});
 				if options.disable_windows {
 					// sleep for a bit to avoid race condition (see `set_lock_enabled`'s documentation).
+					tracing::debug!("waiting for lock screen before disabling lock");
 					std::thread::sleep(Duration::from_millis(500));
 					disable_lock();
 				}
